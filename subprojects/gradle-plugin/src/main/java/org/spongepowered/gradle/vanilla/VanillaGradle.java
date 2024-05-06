@@ -61,6 +61,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -107,10 +108,13 @@ public final class VanillaGradle implements Plugin<Object> {
             });
         });
 
-        project.getPlugins().withId("com.github.johnrengelman.shadow", plugin -> {
+        // io.github.goooler.shadow is a fork used for Java 21+ support
+        final Plugin<?> shadowPlugin = Optional.ofNullable(project.getPlugins().findPlugin("com.github.johnrengelman.shadow"))
+                .orElse(project.getPlugins().findPlugin("io.github.goooler.shadow"));
+        if (shadowPlugin != null) {
             final Provider<Set<String>> provider = project.provider(new ResolveMinecraftLibNames(minecraftConfig));
-            VanillaGradle.applyShadowConfiguration(project.getTasks(), provider, plugin);
-        });
+            VanillaGradle.applyShadowConfiguration(project.getTasks(), provider, shadowPlugin);
+        }
 
         this.createDumpClass(project, minecraftConfig);
         this.createDisplayMinecraftVersions(project.getPlugins().getPlugin(MinecraftRepositoryPlugin.class).service(), project.getTasks());
